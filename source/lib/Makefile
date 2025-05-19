@@ -1,6 +1,9 @@
 # Compile SimpleContainer source
+
+libsic: libsic-lib
+
 libsic-compile:
-	gcc -c -fPIC simple_container.c -o simple_container.o
+	gcc -c -Wall -Werror -fPIC -I../../interface simple_container.c -o simple_container.o
 
 # Generate the SO library
 libsic-lib: libsic-compile
@@ -11,5 +14,5 @@ libsic-install: libsic-lib
 	cp libsic.so /usr/lib/
 
 clean:
-	rm -f simpele_container.o
+	rm -f simple_container.o
 	rm -f libsic.so
