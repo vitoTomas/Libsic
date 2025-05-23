@@ -28,7 +28,6 @@ int main()
   printf("Running libsic test...\n");
   libsic_init_container(conf);
   printf("Container initialized!\n");
-  sleep(5);
   libsic_execute(&conf, "/bin/sh", "/bin/sh");
 
   return 0;

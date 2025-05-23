@@ -2,15 +2,25 @@
  *
  * SimpleContainer library interface.
  *
- * Copyright Vito Tomas, 2025.
+ * Copyright 2025 Vito Tomas
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  */
 
 #ifndef _LIBSIC_
 #define _LIBSIC_
 
-#include <stdint.h>
 #include <internal/libsic_inter.h>
+#include <stdint.h>
 
 /**
  * Return codes.
@@ -23,26 +33,26 @@
  * RET_NOSUPP        Operation not supported.
  *
  */
-#define RET_SUCC     0
-#define RET_INTER    1
-#define RET_PARAM    2
-#define RET_ABN      3
-#define RET_NOSUPP   9
+#define RET_SUCC 0
+#define RET_INTER 1
+#define RET_PARAM 2
+#define RET_ABN 3
+#define RET_NOSUPP 9
 
 /**
  * Config flags.
  *
  */
 #define LS_DIRS_CREAT (1 << 0)
-#define LS_DAEMONIZE  (1 << 1)
+#define LS_DAEMONIZE (1 << 1)
 
 struct LIBSIC_CONTAINER_CONFIG {
- uint8_t flags;
- int32_t namespaces;
- char container_path[PATH_LEN_MAX];
- char rootfs_path[PATH_LEN_MAX];
- char tar_archive[PATH_LEN_MAX];
- char unix_socket[PATH_LEN_MAX];
+  uint8_t flags;
+  int32_t namespaces;
+  char container_path[PATH_LEN_MAX];
+  char rootfs_path[PATH_LEN_MAX];
+  char tar_archive[PATH_LEN_MAX];
+  char unix_socket[PATH_LEN_MAX];
 };
 
 typedef struct LIBSIC_CONTAINER_CONFIG libsic_cconf_t;
@@ -61,8 +71,7 @@ int libsic_init_container(libsic_cconf_t conf);
  *
  *
  */
-void libsic_execute(const libsic_cconf_t *conf,
-                    const char *path,
+void libsic_execute(const libsic_cconf_t *conf, const char *path,
                     const char *arg0);
 
 /**

@@ -1,6 +1,11 @@
 #!/bin/bash
 set -p
 
+VERSION=$(git describe --tags | sed 's/^v\(.*\)/\1/')
+
+cp ../source/lib/libsic.so."$VERSION" /usr/lib
+ln -s /usr/lib/libsic.so."$VERSION" /usr/lib/libsic.so
+
 make default
-cp ../source/lib/libsic.so /usr/lib
+rm -rf /tmp/scontainer
 ./generator

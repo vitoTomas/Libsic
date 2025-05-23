@@ -2,7 +2,17 @@
  *
  * SimpleContainer library implementation.
  *
- * Copyright Vito Tomas, 2025.
+ * Copyright 2025 Vito Tomas
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  */
 
@@ -267,12 +277,59 @@ static int load_container(const char *tar_path, const char *rootfs_path) {
   return RET_SUCC;
 }
 
+static int request(struct COM *req, struct COM *res, const char *unix_socket) {
+  struct sockaddr_un addr;
+  int sockfd, ret;
+  ssize_t bytes;
+
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  strncpy(addr.sun_path, unix_socket, sizeof(addr.sun_path) - 1);
+
+  sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sockfd < 0) {
+    syslog(LOG_ERR, "Could not open container socket, [%d] : %s.", errno,
+           strerror(errno));
+    return RET_INTER;
+  }
+
+  ret = connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
+  if (ret < 0) {
+    syslog(LOG_ERR,
+           "Could not connect to the container controller, "
+           "[%d] : %s.",
+           errno, strerror(errno));
+    close(sockfd);
+    return RET_INTER;
+  }
+
+  bytes = send(sockfd, req, sizeof(struct COM), 0);
+  if (bytes < 0) {
+    syslog(LOG_ERR, "Failed to send request, [%d] : %s.", errno,
+           strerror(errno));
+    close(sockfd);
+    return RET_INTER;
+  }
+
+  bytes = recv(sockfd, res, sizeof(struct COM) - 1, 0);
+  if (bytes < 0) {
+    syslog(LOG_ERR, "Failed to receive response, [%d] : %s.", errno,
+           strerror(errno));
+    close(sockfd);
+    return RET_INTER;
+  }
+
+  close(sockfd);
+  return RET_SUCC;
+}
+
 /* Initialize a container instance. */
 int libsic_init_container(libsic_cconf_t conf) {
   struct __user_cap_header_struct cap_hdr;
   struct __user_cap_data_struct cap_data[2];
+  struct COM req, res;
   pid_t pid;
-  int sv[2], ret;
+  int sv[2], attempts = 0, ret;
 
   /* Create required directories if they don't exist. */
   ret = create_dir(conf.container_path);
@@ -295,8 +352,7 @@ int libsic_init_container(libsic_cconf_t conf) {
 
   pid = fork();
   if (pid > 0) {
-    /* Calling parent, return to the caller. */
-    return RET_SUCC;
+    ;
   } else if (pid == 0) {
     setsid();
 
@@ -342,7 +398,7 @@ int libsic_init_container(libsic_cconf_t conf) {
                strerror(errno));
         exit(RET_INTER);
       }
-      
+
       controller_internal(conf, sv[1]);
 
     } else {
@@ -356,6 +412,27 @@ int libsic_init_container(libsic_cconf_t conf) {
     return RET_INTER;
   }
 
+  /* Attempt to talk to ECO to see if it's alive. */
+  memset(&req, 0, sizeof(req));
+  memset(&res, 0, sizeof(res));
+  req.type = REQ_ALIVE;
+
+  while (attempts < 5) {
+    ret = request(&req, &res, conf.unix_socket);
+    if (ret == RET_SUCC) break;
+    sleep(1);
+
+    attempts++;
+  }
+
+  if (attempts >= 5) {
+    syslog(LOG_ERR, "Cannot establish connection to UDS socket %s (ECO).",
+           conf.unix_socket);
+  } else if (res.type != RES_ALIVE) {
+    syslog(LOG_ERR, "ECO returned abnormal message for pulse check request on "
+           "socket %s.", conf.unix_socket);
+  }
+
   return RET_SUCC;
 }
 
@@ -364,52 +441,6 @@ int run_process() {
 
   /* TODO: Implement. */
   return RET_NOSUPP;
-}
-
-static int request(struct COM *req, struct COM *res, const char *unix_socket) {
-  struct sockaddr_un addr;
-  int sockfd, ret;
-  ssize_t bytes;
-
-  memset(&addr, 0, sizeof(addr));
-  addr.sun_family = AF_UNIX;
-  strncpy(addr.sun_path, unix_socket, sizeof(addr.sun_path) - 1);
-
-  sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (sockfd < 0) {
-    syslog(LOG_ERR, "Could not open container socket, [%d] : %s.", errno,
-           strerror(errno));
-    return RET_INTER;
-  }
-
-  ret = connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
-  if (ret < 0) {
-    syslog(LOG_ERR,
-           "Could not connect to the container controller, "
-           "[%d] : %s.",
-           errno, strerror(errno));
-    close(sockfd);
-    return RET_INTER;
-  }
-
-  bytes = send(sockfd, req, sizeof(struct COM), 0);
-  if (bytes < 0) {
-    syslog(LOG_ERR, "Failed to send request, [%d] : %s.", errno,
-           strerror(errno));
-    close(sockfd);
-    return RET_INTER;
-  }
-
-  bytes = recv(sockfd, res, sizeof(struct COM) - 1, 0);
-  if (bytes < 0) {
-    syslog(LOG_ERR, "Failed to receive response, [%d] : %s.", errno,
-           strerror(errno));
-    close(sockfd);
-    return RET_INTER;
-  }
-
-  close(sockfd);
-  return RET_SUCC;
 }
 
 void libsic_execute(const libsic_cconf_t *conf, const char *path,
