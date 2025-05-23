@@ -1,3 +1,4 @@
+```txt
  _     ___________  _____ _____ _____
 | |   |_   _| ___ \/  ___|_   _/  __ \
 | |     | | | |_/ /\ `--.  | | | /  \/
@@ -5,6 +6,7 @@
 | |_____| |_| |_/ //\__/ /_| |_| \__/\
 \_____/\___/\____/ \____/ \___/ \____/
 
+```
 # SimpleContainer Runtime Library
 
 SimpleContainer Runtime Library is a container runtime library written in C
@@ -23,9 +25,11 @@ using a pair od UDS sockets created before forking - ICO is created from ECO.
 To kill a container instance one needs to send a message to ECO so it can
 notify ICO it can die. All of this is done using the library interface.
 
-When starting new processes in the existing container instance, namespace
+When starting a new processes in the existing container instance, namespace
 properties are copied from ICO. This is done through PID file descriptor(s).
 Container(s) must be instanced correctly before new processes are created.
+
+Requires root privileges.
 
 > [!CAUTION]
 > Killing ICO without following library defined protocol can lead to an
@@ -33,6 +37,7 @@ Container(s) must be instanced correctly before new processes are created.
 > system reboots.
 
 # Diagram
+```txt
 
 ┌────────────┐                   ┌───────────────┐
 │            │                   │               │
@@ -52,6 +57,7 @@ Container(s) must be instanced correctly before new processes are created.
 
                        HOST             CONTAINER
 
+```
 # License
 
 Defined in the `LICENSE` file and valid for all of the source code defined
