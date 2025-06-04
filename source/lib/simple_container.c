@@ -44,19 +44,19 @@ static int check_dirs(const char *path) {
   int ret;
 
   if (!path) {
-    return RET_PARAM;
+    return LIBSIC_RET_PARAM;
   }
 
   if (strnlen(path, PATH_LEN_MAX) >= PATH_LEN_MAX) {
-    return RET_PARAM;
+    return LIBSIC_RET_PARAM;
   }
 
   ret = stat(path, &buffer);
   if (ret) {
-    return RET_INTER;
+    return LIBSIC_RET_INTER;
   }
 
-  return RET_SUCC;
+  return LIBSIC_RET_SUCC;
 }
 
 static int create_dir(const char *path) {
@@ -72,10 +72,10 @@ static int create_dir(const char *path) {
   if (ret) {
     syslog(LOG_ERR, "Failed at creating container directory, [%d] : %s.", errno,
            strerror(errno));
-    return RET_INTER;
+    return LIBSIC_RET_INTER;
   }
 
-  return RET_SUCC;
+  return LIBSIC_RET_SUCC;
 }
 
 static int controller_internal(libsic_cconf_t conf, int inter_fd) {
@@ -85,29 +85,29 @@ static int controller_internal(libsic_cconf_t conf, int inter_fd) {
 
   ret = chroot(conf.rootfs_path);
   if (ret) {
-    ret = RET_INTER;
+    ret = LIBSIC_RET_INTER;
     goto exit_inter_cont;
   }
 
   ret = chdir("/");
   if (ret) {
-    ret = RET_INTER;
+    ret = LIBSIC_RET_INTER;
     goto exit_inter_cont;
   }
 
-  ret = RET_SUCC;
+  ret = LIBSIC_RET_SUCC;
 
   if (conf.flags & LS_DAEMONIZE) {
     while (1) {
       data_count = read(inter_fd, &req, sizeof(req));
       if (data_count < 0) {
-        ret = RET_INTER;
+        ret = LIBSIC_RET_INTER;
         break;
       }
 
       switch (req.type) {
       case REQ_KILL:
-        exit(RET_SUCC);
+        exit(LIBSIC_RET_SUCC);
       default:;
         /* Unknown, do nothing. */
       }
@@ -176,7 +176,7 @@ static int controller_listen(int server_fd, int inter_fd,
     if (ret == -1) {
       syslog(LOG_ERR, "Controller polling failed, [%d] : %s.", errno,
              strerror(errno));
-      return RET_INTER;
+      return LIBSIC_RET_INTER;
     }
 
     if (pfd.revents & POLLIN) {
@@ -219,7 +219,7 @@ static int controller_listen(int server_fd, int inter_fd,
     }
   }
 
-  return RET_SUCC;
+  return LIBSIC_RET_SUCC;
 }
 
 static void debug_config(libsic_cconf_t *conf) {
@@ -255,7 +255,7 @@ static int controller_external(libsic_cconf_t conf, int inter_fd, pid_t pid) {
   } else {
     syslog(LOG_WARNING, "[%d] Internal controller [%d] exited abnormally.",
            getpid(), pid_inter);
-    ret = RET_ABN;
+    ret = LIBSIC_RET_ABN;
   }
 
   exit(ret);
@@ -271,10 +271,10 @@ static int load_container(const char *tar_path, const char *rootfs_path) {
   if (ret) {
     syslog(LOG_ERR, "Could not untar rootfs archive, [%d] : %s.", errno,
            strerror(errno));
-    return RET_INTER;
+    return LIBSIC_RET_INTER;
   }
 
-  return RET_SUCC;
+  return LIBSIC_RET_SUCC;
 }
 
 static int request(struct COM *req, struct COM *res, const char *unix_socket) {
@@ -290,7 +290,7 @@ static int request(struct COM *req, struct COM *res, const char *unix_socket) {
   if (sockfd < 0) {
     syslog(LOG_ERR, "Could not open container socket, [%d] : %s.", errno,
            strerror(errno));
-    return RET_INTER;
+    return LIBSIC_RET_INTER;
   }
 
   ret = connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
@@ -300,7 +300,7 @@ static int request(struct COM *req, struct COM *res, const char *unix_socket) {
            "[%d] : %s.",
            errno, strerror(errno));
     close(sockfd);
-    return RET_INTER;
+    return LIBSIC_RET_INTER;
   }
 
   bytes = send(sockfd, req, sizeof(struct COM), 0);
@@ -308,7 +308,7 @@ static int request(struct COM *req, struct COM *res, const char *unix_socket) {
     syslog(LOG_ERR, "Failed to send request, [%d] : %s.", errno,
            strerror(errno));
     close(sockfd);
-    return RET_INTER;
+    return LIBSIC_RET_INTER;
   }
 
   bytes = recv(sockfd, res, sizeof(struct COM) - 1, 0);
@@ -316,11 +316,11 @@ static int request(struct COM *req, struct COM *res, const char *unix_socket) {
     syslog(LOG_ERR, "Failed to receive response, [%d] : %s.", errno,
            strerror(errno));
     close(sockfd);
-    return RET_INTER;
+    return LIBSIC_RET_INTER;
   }
 
   close(sockfd);
-  return RET_SUCC;
+  return LIBSIC_RET_SUCC;
 }
 
 /* Initialize a container instance. */
@@ -362,21 +362,21 @@ int libsic_init_container(libsic_cconf_t conf) {
     if (ret) {
       syslog(LOG_ERR, "Failed to get user capabilities, [%d] : %s.\n", errno,
              strerror(errno));
-      exit(RET_INTER);
+      exit(LIBSIC_RET_INTER);
     }
 
     ret = unshare(conf.namespaces);
     if (ret) {
       syslog(LOG_ERR, "Failed to create isolated namespaces, [%d] : %s.", errno,
              strerror(errno));
-      exit(RET_INTER);
+      exit(LIBSIC_RET_INTER);
     }
 
     ret = socketpair(AF_UNIX, SOCK_DGRAM, 0, sv);
     if (ret) {
       syslog(LOG_ERR, "Cannot create a socket pair, [%d] : %s.", errno,
              strerror(errno));
-      exit(RET_INTER);
+      exit(LIBSIC_RET_INTER);
     }
 
     pid = fork();
@@ -396,20 +396,20 @@ int libsic_init_container(libsic_cconf_t conf) {
       if (ret) {
         syslog(LOG_ERR, "Failed to set user capabilites, [%d] : %s.\n", errno,
                strerror(errno));
-        exit(RET_INTER);
+        exit(LIBSIC_RET_INTER);
       }
 
       controller_internal(conf, sv[1]);
 
     } else {
       syslog(LOG_ERR, "Detachment error, [%d] : %s.", errno, strerror(errno));
-      return RET_INTER;
+      return LIBSIC_RET_INTER;
     }
 
   } else {
 
     syslog(LOG_ERR, "Cannot fork, [%d] : %s.", errno, strerror(errno));
-    return RET_INTER;
+    return LIBSIC_RET_INTER;
   }
 
   /* Attempt to talk to ECO to see if it's alive. */
@@ -419,7 +419,7 @@ int libsic_init_container(libsic_cconf_t conf) {
 
   while (attempts < 5) {
     ret = request(&req, &res, conf.unix_socket);
-    if (ret == RET_SUCC) break;
+    if (ret == LIBSIC_RET_SUCC) break;
     sleep(1);
 
     attempts++;
@@ -433,14 +433,14 @@ int libsic_init_container(libsic_cconf_t conf) {
            "socket %s.", conf.unix_socket);
   }
 
-  return RET_SUCC;
+  return LIBSIC_RET_SUCC;
 }
 
 /* Run a process inside the container. */
 int run_process() {
 
   /* TODO: Implement. */
-  return RET_NOSUPP;
+  return LIBSIC_RET_NOSUPP;
 }
 
 void libsic_execute(const libsic_cconf_t *conf, const char *path,
@@ -533,9 +533,9 @@ int libsic_destroy_container(const libsic_cconf_t *conf) {
   }
 
   if (res.type == RES_KILL)
-    return RET_SUCC;
+    return LIBSIC_RET_SUCC;
   syslog(LOG_ERR, "Incorrect packet received from the container "
                   "controller instance.");
 
-  return RET_ABN;
+  return LIBSIC_RET_ABN;
 }

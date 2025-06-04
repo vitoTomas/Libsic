@@ -33,11 +33,11 @@
  * RET_NOSUPP        Operation not supported.
  *
  */
-#define RET_SUCC 0
-#define RET_INTER 1
-#define RET_PARAM 2
-#define RET_ABN 3
-#define RET_NOSUPP 9
+#define LIBSIC_RET_SUCC 0
+#define LIBSIC_RET_INTER 1
+#define LIBSIC_RET_PARAM 2
+#define LIBSIC_RET_ABN 3
+#define LIBSIC_RET_NOSUPP 9
 
 /**
  * Config flags.

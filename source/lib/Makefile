@@ -1,6 +1,6 @@
 # Compile SimpleContainer source
 
-VERSION := $(shell git describe --tags | sed 's/^v\(.*\)/\1/')
+VERSION := $(shell git describe --tags | sed -n 's/^v\([0-9]\.[0-9]\.[0-9]\).*/\1/p')
 
 libsic: libsic-lib
 
